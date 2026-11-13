@@ -4,19 +4,26 @@
 
 이 문서는 시장놀이형 웹게임의 MVP(최소 기능 제품) 구현 명세다. 핵심 게임 기능은 **자원 모으기**와 **시장 물품 구매·판매**이며, 이를 이용하기 위한 마을 지도 이동, 장소 상호작용, 가방 UI를 포함한다. 개발자는 이 문서의 화면, 규칙, 데이터, API, 검증 조건과 완료 기준을 따라 기능을 구현할 수 있어야 한다.
 
-> 개정된 허브·시장 마을·작업 지도 흐름을 프론트엔드에 구현했다. 클릭 목적지 이동, 가게/작업 구역 진입 시 전체 화면 전환, 가방 HUD를 포함한다. 프로토타입은 브라우저 `localStorage`를 사용하며, 서버·PostgreSQL 백엔드는 아직 연결하지 않았다.
+> 개정된 허브·시장 마을·작업 지도 흐름을 Next.js/React 프론트엔드에 구현했다. 클릭 목적지 이동, 가게/작업 구역 진입 시 전체 화면 전환, 가방 HUD를 포함한다. 데이터는 브라우저 `localStorage`에 저장하며, 별도 API 서버는 포함하지 않는다.
 
 ## 0. 실행 방법 및 현재 구현 상태
 
 ### 실행 방법
 
-프로젝트 폴더에서 `index.html`을 최신 데스크톱 또는 모바일 브라우저로 열면 플레이할 수 있다. 별도의 빌드나 패키지 설치는 필요하지 않다. Google Fonts를 사용할 수 없는 환경에서는 시스템 기본 글꼴로 표시된다.
+Node.js 20.9 이상을 설치한 후 프로젝트 폴더에서 다음 명령을 실행한다.
 
-### API 필요 여부 및 GitHub Pages 배포
+```bash
+npm.cmd install
+npm.cmd run dev
+```
+
+개발 서버가 시작되면 `http://localhost:3000`에서 플레이할 수 있다. 프로덕션 빌드는 `npm.cmd run build`, 빌드 결과 실행은 `npm.cmd run start`를 사용한다. 위 `npm.cmd` 명령은 Windows PowerShell 기준이며, macOS/Linux에서는 `npm`을 사용한다.
+
+### API 필요 여부 및 Vercel 배포
 
 현재 MVP는 로그인, 여러 기기 간 저장 동기화, 서버 검증이 없고 브라우저 `localStorage`에만 게임 데이터를 저장하므로 별도 API 서버가 필요하지 않다. 이 저장 방식은 같은 브라우저/기기 안에서만 유지된다. 계정, 클라우드 저장, 서버 기준 거래 검증을 추가할 때만 PRD의 백엔드 API와 데이터베이스를 구현한다.
 
-GitHub Actions 배포 워크플로는 `master`에 push되면 정적 사이트를 GitHub Pages에 배포한다. 최초 한 번 저장소의 **Settings → Pages → Build and deployment → Source**를 **GitHub Actions**로 설정해야 한다. GitHub의 기본 `GITHUB_TOKEN`은 Pages 사이트를 처음 생성할 권한이 없어 이 설정은 워크플로에서 자동으로 할 수 없다. 설정 후 `master`에 다시 push하거나 Actions에서 워크플로를 수동 실행하면 배포된다. 배포 완료 URL은 Actions 실행 결과 또는 Pages 설정에서 확인한다. 앱 파일은 상대 경로를 사용하므로 저장소 이름이 포함된 Pages URL에서도 동작한다.
+Vercel에서 **Add New → Project**를 선택하고 GitHub의 `leeauthorlee/market-place-game` 저장소를 연결한다. Framework Preset은 Next.js로 자동 감지되며 기본 Build Command(`next build`)와 Output 설정을 그대로 사용하면 된다. 환경 변수나 API 키는 필요하지 않다. 배포 후 `master`에 push할 때마다 Vercel이 새 배포를 만든다.
 
 ### 구현된 기능
 
@@ -625,8 +632,10 @@ GET /api/game-history?limit=20&cursor=...
 
 ## 11. 프론트엔드 구현 명세
 
+- 프론트엔드는 **Next.js App Router + React + TypeScript**로 구현한다. `app/page.tsx`는 서버 컴포넌트로 클라이언트 게임 컴포넌트를 렌더링한다.
+- 인터랙티브 게임은 `"use client"`가 선언된 `app/GameClient.tsx`에서 React state/effect로 관리한다. 브라우저 전용 `localStorage` 접근은 `useEffect` 이후에만 수행해 SSR hydration 불일치를 방지한다.
 - 화면은 `hub`, `market_map`, `shop`, `work_map`, `work_area` 장면 상태로 구성한다. 새로고침 후에는 허브부터 표시한다.
-- 허브, 시장 지도, 작업 지도는 SVG/DOM 기반의 2D 지도 장면으로 구현한다. 건물·팻말·구역·길·캐릭터는 동일한 장면별 좌표계를 사용한다.
+- 허브, 시장 지도, 작업 지도는 SVG/React 기반의 2D 지도 장면으로 구현한다. 건물·팻말·구역·길·캐릭터는 동일한 장면별 좌표계를 사용한다.
 - 장면 간 전환은 전체 장면을 교체한다. 전환 시 HUD만 유지하고 이전 장면의 지도/콘텐츠는 숨긴다.
 - 각 마을 지도에서 마우스 왼쪽 클릭/터치 탭으로 목적지를 정한다. 클릭한 도로 위치는 그 지점으로, 건물이나 작업 구역은 지정된 입구로 향하게 한다.
 - 최단 경로 탐색은 해당 장면 도로 그래프의 교점/선분을 사용한다. 클릭한 목적지를 새로 바꾸면 진행 중 경로를 취소하고 다시 계산한다.
@@ -636,14 +645,13 @@ GET /api/game-history?limit=20&cursor=...
 - 시장 지도에서 건물 클릭 시 접근 지점까지 걷고 `shop` 장면으로 전환한다. 개별 가게 화면은 해당 카테고리 상품만 보여주며, 뒤로 가기는 시장 지도/허브로 이어진다.
 - 작업 지도에서 구역 클릭 시 해당 입구까지 걷고 `work_area` 확대 장면으로 전환한다. 확대 장면에서 가능한 행동을 선택해 기존 5초 타이머 및 고정 보상 규칙을 실행한다.
 - 가방 HUD는 모든 장면의 오른쪽 위에 표시한다. 클릭하면 현금·인벤토리 패널을 열고, 다시 클릭하거나 닫기 버튼으로 닫는다.
-- 서버의 `GET /api/game-state` 응답을 초기 게임 상태로 사용한다. 프로토타입에서는 같은 상태 계약을 `localStorage`에서 복구할 수 있다.
-- API 성공 응답을 기준으로 현금·아이템 상태를 갱신한다. 요청 전에 돈이나 아이템을 확정 변경하는 낙관적 갱신은 사용하지 않는다.
+- 현재 MVP는 백엔드 API 호출 대신 `localStorage`에서 현금, 인벤토리, 작업 세션, 거래 내역과 장면별 지도 위치를 복구/저장한다.
+- 구매·판매·생산은 React state를 갱신하고 브라우저 저장소에 반영한다. Vercel 배포에 서버 환경 변수나 외부 API 키는 필요하지 않다.
 - 타이머는 `completesAt`과 현재 시각의 차이로 표시한다. 가방 열기와 전체 화면 전환 중에도 작업 진행 상태를 보존한다.
 - 구매·판매 요청 중에는 해당 버튼을 비활성화해 우발적인 연속 클릭을 줄인다.
-- 모든 API 오류는 한국어 메시지로 사용자에게 알려준다.
-- 네트워크 재시도 시 동일한 `requestId`를 사용해 중복 보상/거래를 방지한다.
+- 향후 API를 연결하면 모든 API 오류를 한국어로 표시하고, 재시도 시 `requestId`로 중복 보상/거래를 방지한다.
 
-## 12. 백엔드 구현 명세
+## 12. 향후 백엔드 구현 명세 (현재 미구현)
 
 - **언어/런타임:** Node.js + TypeScript
 - **HTTP 프레임워크:** Fastify(또는 프로젝트에서 합의한 동등 프레임워크)
@@ -659,17 +667,20 @@ GET /api/game-history?limit=20&cursor=...
 ## 13. 권장 코드 구성
 
 ```text
-index.html              # 지도, 시장, 가게, 가방 HUD의 앱 셸
-styles.css              # 화면, 반응형 레이아웃, 지도 그래픽
-game.js                 # 이동, 충돌, 장소 상호작용, 작업/거래 UI 상태
-server/
-  routes/                # HTTP 라우트
-  services/              # 활동·시장 도메인 로직
-  repositories/          # PostgreSQL 접근
-  schemas/               # 요청/응답 검증 스키마
+app/
+  layout.tsx              # HTML 루트, 메타데이터, 전역 CSS
+  page.tsx                # 시작 경로, 게임 클라이언트 진입점
+  GameClient.tsx          # 지도 이동, 장면·작업·거래 UI 및 React 상태
+  globals.css             # 테마, 지도, 반응형 스타일
+lib/
+  game-data.ts            # 데이터 타입, 아이템/활동/지도 설정, 저장 데이터 검증
+server/                   # 계정/API 백엔드 (현재 미구현)
+package.json              # Next.js 실행/빌드 스크립트와 의존성
+tsconfig.json             # TypeScript 설정
+next.config.ts            # Next.js 설정
 ```
 
-현재 프로토타입과 일치하도록 프론트엔드는 의존성 없는 HTML/CSS/JavaScript를 기준으로 한다. 지도 보행 가능 영역은 SVG 경로 또는 동등한 지도 충돌 형상으로 정의한다. 클라이언트와 서버 간 가격·보상 설정이 어긋나지 않도록 서버 설정을 기준으로 하며, 클라이언트는 조회 API에서 받은 설정을 화면 표시에 사용한다.
+Vercel은 저장소의 Next.js App Router를 자동 감지한다. 별도 `vercel.json`이나 GitHub Pages 워크플로는 사용하지 않는다. 지도 보행 가능 영역은 `lib/game-data.ts`의 노드/선분 그래프와 SVG 도로를 함께 사용한다. 위 API·DB 명세는 로그인, 클라우드 저장, 서버 측 거래 검증을 추가할 때의 확장 설계다.
 
 ## 14. 비기능 요구사항
 
