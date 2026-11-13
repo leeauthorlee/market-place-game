@@ -16,7 +16,7 @@
 
 현재 MVP는 로그인, 여러 기기 간 저장 동기화, 서버 검증이 없고 브라우저 `localStorage`에만 게임 데이터를 저장하므로 별도 API 서버가 필요하지 않다. 이 저장 방식은 같은 브라우저/기기 안에서만 유지된다. 계정, 클라우드 저장, 서버 기준 거래 검증을 추가할 때만 PRD의 백엔드 API와 데이터베이스를 구현한다.
 
-GitHub Actions 배포 워크플로는 `master`에 push되면 정적 사이트를 GitHub Pages에 배포한다. 저장소의 **Settings → Pages → Build and deployment → Source**를 **GitHub Actions**로 한 번 설정한 뒤, 배포 완료 URL은 Actions 실행 결과 또는 Pages 설정에서 확인한다. 앱 파일은 상대 경로를 사용하므로 저장소 이름이 포함된 Pages URL에서도 동작한다.
+GitHub Actions 배포 워크플로는 `master`에 push되면 GitHub Pages를 활성화하고 정적 사이트를 배포한다. Pages 자동 활성화 권한이 없는 경우 저장소의 **Settings → Pages → Build and deployment → Source**를 **GitHub Actions**로 한 번 설정한다. 배포 완료 URL은 Actions 실행 결과 또는 Pages 설정에서 확인한다. 앱 파일은 상대 경로를 사용하므로 저장소 이름이 포함된 Pages URL에서도 동작한다.
 
 ### 구현된 기능
 
